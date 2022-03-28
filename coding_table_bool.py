@@ -1,10 +1,10 @@
 import time
 
 from tqdm import tqdm
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Tuple
 import itertools
 import numpy as np
-
+import cProfile
 from coding_table import CodingTable
 
 
@@ -111,12 +111,26 @@ class CodingTableBoolean:
 
         return np.array(cover)
 
+    def get_cover_array(self, db: np.ndarray, ct: np.ndarray) -> np.ndarray:
+        cover = np.zeros(shape=(db.shape[0], ct.shape[0]), dtype=int)
+        for i, t in enumerate(db):
+            t_copy = t.copy()
+            for j, x in enumerate(ct):
+                if not t_copy.any():
+                    break
+                if self.is_subset(t=t_copy, x=x):
+                    cover[i, j] = 1
+                    t_copy = t_copy - x
+
+        return cover
+
     @staticmethod
     def is_subset(t: np.ndarray, x: np.ndarray):
         """
         Is x a subset of t?
         """
-        return np.sum(x) == np.sum(t * x)
+        # return np.sum(x) == np.sum(t * x)
+        return (x <= t).all()
 
     def get_db_cover(self, ct: np.ndarray, db: np.ndarray = None) -> Dict[np.ndarray, np.ndarray]:
         """
@@ -157,6 +171,25 @@ class CodingTableBoolean:
 
         return final_len_dict
 
+    def get_code_lengths_array(self, ct: np.ndarray, db: np.ndarray = None) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        This method returns a dictionary that contains pairs of all items in the coding table, together with their code
+        length, that will be used during encoding of the database.
+        """
+        if db is None:
+            db = self.db
+        cover = self.get_cover_array(db=db, ct=ct)
+
+        counts = np.sum(cover, axis=0)
+        final_len = np.zeros(shape=len(counts))
+        total_codes = np.sum(counts)
+        for i, x in enumerate(ct):
+            count = counts[i]
+            if count > 0:
+                new_length: float = count / total_codes
+                final_len[i] = -np.log2(new_length)
+        return final_len, cover
+
     def get_item_encode_length(self, t: np.ndarray, ct: np.ndarray, l: Dict[bytes, float]) -> float:
         """
         Returns the encoding length for one item, using a certain coding table.
@@ -175,6 +208,10 @@ class CodingTableBoolean:
         total_length: float = 0.0
         for t in db:
             total_length += self.get_item_encode_length(t=t, ct=ct, l=l_ct)
+        return total_length
+
+    def get_db_encode_length_array(self, db: np.ndarray, ct: np.ndarray, l_ct=None, cover: np.ndarray = None) -> float:
+        total_length: float = np.sum(l_ct * np.sum(cover, axis=0))
         return total_length
 
     def get_standard_table(self, db: np.ndarray = None) -> np.ndarray:
@@ -200,6 +237,13 @@ class CodingTableBoolean:
                     total_length += l_st[singletons_db[i].tobytes()]
         return total_length
 
+    def get_ct_length_array(self, db: np.ndarray, ct: np.ndarray, l_ct=None, l_st=None) -> float:
+        total_length = np.sum(l_ct)
+        for i, x in enumerate(ct):
+            if l_ct[i] > 0:
+                total_length += np.sum(l_st * x)
+        return total_length
+
     def get_total_length(self, ct: np.ndarray = None, db: np.ndarray = None) -> float:
         """
         Returns the total encoding length
@@ -210,13 +254,13 @@ class CodingTableBoolean:
         if ct is None:
             ct = self.coding_table
         st = self.standard_table
-        l_st = self.get_code_lengths(ct=st, db=db)
-        l_ct = self.get_code_lengths(ct=ct, db=db)
+        l_st, _ = self.get_code_lengths_array(ct=st, db=db)
+        l_ct, db_cover = self.get_code_lengths_array(ct=ct, db=db)
         # encoding length for database
-        db_length = self.get_db_encode_length(db=db, ct=ct, l_ct=l_ct)
+        db_length = self.get_db_encode_length_array(db=db, ct=ct, l_ct=l_ct, cover=db_cover)
 
         # encoding length for code table
-        ct_length = self.get_ct_length(db=db, ct=ct, l_st=l_st, l_ct=l_ct)
+        ct_length = self.get_ct_length_array(db=db, ct=ct, l_st=l_st, l_ct=l_ct)
 
         total_length: float = db_length + ct_length
         return total_length
@@ -259,13 +303,13 @@ if __name__ == "__main__":
     np.random.seed(0)
     db_test = np.random.rand(15, 15).round().astype(int)
     begin = time.time()
-    ct = CodingTableBoolean(db=db_test)
-    print(ct.coding_table)
+    cProfile.run('CodingTableBoolean(db=db_test)')
+    # print(ct.coding_table)
     print(time.time()-begin)
     db_set = []
     for b in db_test:
         db_set += [frozenset(np.where(b)[0]), ]
     begin = time.time()
     ct2 = CodingTable(db=db_set)
-    print(ct2.coding_table)
+    # print(ct2.coding_table)
     print(time.time()-begin)
