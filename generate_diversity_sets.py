@@ -6,7 +6,7 @@ import pickle
 
 
 def generate_diversity_sets(set_list, bool_list, k=None, optimal_index: int = 0, save=True, base_path="",
-                            fitness_list=[], tie_breaker=True):
+                            fitness_list=[], tie_breaker=False):
     if k is None:
         k = int(len(set_list) / 100)
 
@@ -28,7 +28,7 @@ def generate_diversity_sets(set_list, bool_list, k=None, optimal_index: int = 0,
         hd_list += [item, ]
 
     if save:
-        with open(base_path+'hamming.pickle', 'wb') as handle:
+        with open(base_path + 'hamming.pickle', 'wb') as handle:
             pickle.dump(hd, handle)
 
     return mdl, hd

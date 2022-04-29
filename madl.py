@@ -50,12 +50,12 @@ def max_description_length(db: List[frozenset], k: int, optimal_index: int = 0, 
             fitness_list.pop(j)
         else:
             j = np.argmax(div_array)
-        print("Evaluation Time = " + str(time.time()-begin))
-        begin2 = time.time()
+        # print("Evaluation Time = " + str(time.time()-begin))
+        # begin2 = time.time()
         # A new coding table is calculated, again using KRIMP, but now for the old set + the new solution
         sol_set += [db[j], ]
         ct = CodingTable(db=sol_set, st=standard_table)
-        print("Coding Table Time = " + str(time.time()-begin2))
+        print("Coding Table Time = " + str(time.time()-begin))
     return sol_set
 
 

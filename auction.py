@@ -1,10 +1,11 @@
 import numpy as np
 from cpmpy import *
+import pickle
 
 
 def auction(n: int = 500, m: int = 100, per: int = 50, save: bool = True, seed: int = 1, cap=None):
     np.random.seed(1)
-    bid_items = (np.random.rand(n, m) > 0.8).astype(int)
+    bid_items = (np.random.rand(n, m) > 0.90).astype(int)
     bid_values = np.random.randint(low=1, high=m**2, size=(n, ))
     x = intvar(lb=0, ub=1, shape=n)
     model = Model()
@@ -23,10 +24,44 @@ def auction(n: int = 500, m: int = 100, per: int = 50, save: bool = True, seed: 
     bool_list = []
     num = model.solveAll(display=lambda: bool_list.append(x.value()))
     print("Number of solutions:", num)
-    return bool_list
 
+    if cap is not None:
+        random_perm = np.random.permutation(bool_list)
+        bool_list = random_perm[:cap]
+    bool_list = list(bool_list)
+    fitness_list = []
+    item_list = []
+    for i, b in enumerate(bool_list):
+        item_list.append(np.where(b)[0])
+        fitness = sum(b * bid_values)
+        fitness_list.append(fitness)
 
+    set_list = []
+    for l in item_list:
+        set_list += [frozenset(l)]
+
+    if save:
+        if cap is None:
+            base_string = "experiments/auction/auction_solutions/auction_randomseed_"+str(seed)+"_n"+str(n)+"_ns"+str(m)+"_per"+str(per)
+        else:
+            base_string = "experiments/auction/auction_solutions/auction_randomseed_"+str(seed)+"_n"+str(n)+"_ns"+str(m)+"_per"+str(per) \
+                          +"_cap"+str(cap)
+        with open(base_string + '_setlist.pickle', 'wb') as handle:
+            pickle.dump(set_list, handle)
+            print("Saved set list")
+        with open(base_string + '_boollist.pickle', 'wb') as handle:
+            pickle.dump(bool_list, handle)
+            print("Saved bool list")
+        with open(base_string + '_fitnesslist.pickle', 'wb') as handle:
+            pickle.dump(fitness_list, handle)
+            print("Saved fitness list")
+
+    return bool_list, set_list, fitness_list
 
 
 if __name__ == "__main__":
-    auction()
+    n = 30
+    per_list = [94, 88, 85, 82, 77, 75]
+    for per in per_list:
+        print("Percentage = "+str(per)+"%")
+        auction(save=False, m=10, n=n, per=per, seed=0)

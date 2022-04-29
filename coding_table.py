@@ -30,7 +30,7 @@ class CodingTable:
         begin = time.time()
         # all candidates to enter into the coding table are first generated
         candidates = self.generate_candidates(db=db)
-        print("Candidate Generation = " + str(time.time()-begin))
+        # print("Candidate Generation = " + str(time.time()-begin))
 
         # These candidates are ordered using the standard candidate order.
         # The resulting array is an index-array.
@@ -39,7 +39,7 @@ class CodingTable:
         new_count = 0
         old_length = self.get_total_length(db=db, ct=ct)
         # All candidates are iteratively added to the coding table to see if compression size decreases.
-        for i, can_index in tqdm(enumerate(st_can_order)):
+        for i, can_index in enumerate(st_can_order):
             candidate = candidates[can_index]
             # If the candidate is already in the coding table, it can be skipped.
             if candidate in ct:

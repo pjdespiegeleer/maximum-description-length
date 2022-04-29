@@ -3,14 +3,16 @@ from typing import List
 import numpy as np
 from cpmpy import *
 import pickle
+from evaluation import generate_entropy_table
 
 
-def knapsack(n: int = 20, r: int = 500, per: int = 90, save: bool = True, seed: int = 1, cap=None):
+def knapsack(n: int = 20, r: int = 500, per: int = 90, save: bool = True, seed: int = 1, cap=None, capacity=None):
     np.random.seed(seed)
     values = np.random.randint(1, r, n)
     weights = np.random.randint(1, r, n)
-    capacity = int(max([0.2 * sum(weights), r]))
-
+    if capacity is None:
+        capacity = int(max([0.2 * sum(weights), r]))
+    print("R = " + str(capacity))
     # Construct the model.
     x = boolvar(shape=n, name="x")
     model = Model(
@@ -28,12 +30,15 @@ def knapsack(n: int = 20, r: int = 500, per: int = 90, save: bool = True, seed: 
 
     item_list = []
     bool_list = []
-    if cap is None:
-        num = model.solveAll(display=lambda: bool_list.append(x.value()))
-    else:
-        num = model.solveAll(display=lambda: bool_list.append(x.value()), solution_limit=cap)
+    num = model.solveAll(display=lambda: bool_list.append(x.value()))
 
     print("Number of solutions:", num)
+
+    if cap is not None:
+        random_perm = np.random.permutation(bool_list)
+        bool_list = random_perm[:cap]
+
+    bool_list = list(bool_list)
 
     fitness_list = []
     for b in bool_list:
@@ -46,10 +51,10 @@ def knapsack(n: int = 20, r: int = 500, per: int = 90, save: bool = True, seed: 
 
     if save:
         if cap is None:
-            base_string = "knapsack_solutions/knapsack_randomseed_"+str(seed)+"_n"+str(n)+"_R"+str(r)+"_per"+str(per)
+            base_string = "experiments/knapsack/knapsack_solutions/knapsack_randomseed_"+str(seed)+"_n"+str(n)+"_R"+str(r)+"_per"+str(per)+"_capacity"+str(capacity)
         else:
-            base_string = "knapsack_solutions/knapsack_randomseed_"+str(seed)+"_n"+str(n)+"_R"+str(r)+"_per"+str(per)\
-                          +"_cap"+str(cap)
+            base_string = "experiments/knapsack/knapsack_solutions/knapsack_randomseed_"+str(seed)+"_n"+str(n)+"_R"+str(r)+"_per"+str(per) \
+                          +"_capacity"+str(capacity)+"_cap"+str(cap)
         with open(base_string + '_setlist.pickle', 'wb') as handle:
             pickle.dump(set_list, handle)
             print("Saved set list")
@@ -129,3 +134,27 @@ def integer_list_to_bool_list(lst: List[int], max_c=None):
         bools = [int(x <= j) for j in range(max_c+1)]
         bool_list += bools
     return bool_list
+
+
+def get_empty_columns(set_list, n=int):
+    q = generate_entropy_table(sol_set=set_list, n=n)
+    qk = [q[i] for i in range(len(q)) if q[i]>0]
+    return len(q)-len(qk)
+
+
+if __name__ == "__main__":
+    n = 30
+    per_list = [76, 75]
+    # n = 15
+    for per in per_list:
+        r = 100
+        capacity = 200
+        print("Per = "+str(per))
+        b, s, f = knapsack(n=n, r=r, per=per, save=False, seed=0, capacity=capacity)
+        # em = get_empty_columns(s, n)
+        # # print("N = "+str(n)+" has "+str(em)+" empty columns")
+        # print("N = "+str(n)+" is "+str(np.round(em/n * 100))+"% empty columns")
+        # a = [np.sum(x) for x in b]
+        # avg = np.round(np.average(a) / n * 100, decimals=2)
+        # print("Average % = " + str(avg) + "%")
+
