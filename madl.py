@@ -2,6 +2,7 @@ import time
 from coding_table import CodingTable, get_standard_table
 import numpy as np
 from typing import List
+import pandas as pd
 
 # from evaluation import fitness_based_tie_breaker
 
@@ -12,6 +13,11 @@ def fitness_based_tie_breaker(value_list, fitness_list):
     best_index = max_indices[best_fitness]
     return best_index
 
+def hamming_sets(sol_set, s):
+    h = 0
+    for x in sol_set:
+        h += len(s) + len(x) - 2 * len(x.intersection(s))
+    return h
 
 def max_description_length(db: List[frozenset], k: int, optimal_index: int = 0, fitness_list=[], tie_breaker=False) -> List[frozenset]:
     if k > len(db):
@@ -31,16 +37,12 @@ def max_description_length(db: List[frozenset], k: int, optimal_index: int = 0, 
         fitness_list.pop(optimal_index)
     # A coding table is generated through the KRIMP algorithm
     ct = CodingTable(db=sol_set, st=standard_table)
-
     # Iterively add solutions to the diversity set
     while len(sol_set) < k:
         begin = time.time()
         print("Iteration = " + str(len(sol_set)))
-
-        # The coding table from the previous step is used to calculate the encoding length of a new collection:
-        # the previously found diverse solutions + one of the solutions that is not chosen yet
+        print("Code-table length = " + str([len(x) for x in ct.coding_table]))
         div_array = [ct.get_total_length(db=sol_set + [s]) for s in db]
-
         # The solutions that has the highest encoding length with the coding table, is chosen as the newest member of
         # the diverse set
         # If a tie-breaker is used, the fitnesses of all the solutions with the largest encoding length is used to decide
@@ -50,10 +52,8 @@ def max_description_length(db: List[frozenset], k: int, optimal_index: int = 0, 
             fitness_list.pop(j)
         else:
             j = np.argmax(div_array)
-        # print("Evaluation Time = " + str(time.time()-begin))
-        # begin2 = time.time()
         # A new coding table is calculated, again using KRIMP, but now for the old set + the new solution
-        sol_set += [db[j], ]
+        sol_set += [db.pop(j), ]
         ct = CodingTable(db=sol_set, st=standard_table)
         print("Coding Table Time = " + str(time.time()-begin))
     return sol_set

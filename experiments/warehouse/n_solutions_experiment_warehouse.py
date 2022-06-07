@@ -4,10 +4,10 @@ import numpy as np
 
 from warehouse_location import warehouse_location
 
-per_list = [115, 130, 138, 143, 150, 155]
+per_list = [110, 115, 120]
 for per in per_list:
     print("Percentage = "+str(per)+"%")
-    seed = 0
+    seed = 20
     np.random.seed(seed)
     nw = 8
     ns = 10

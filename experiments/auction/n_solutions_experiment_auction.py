@@ -1,7 +1,7 @@
 from auction import auction
 from generate_diversity_sets import generate_diversity_sets
 import numpy as np
-per_list = [94, 88, 85, 82, 77, 75]
+per_list = [89, 82, 77]
 for per in per_list:
     print("Percentage = "+str(per)+"%")
     seed = 0
@@ -13,7 +13,7 @@ for per in per_list:
     k = 20
     optimal_index = np.argmax(value_list)
 
-    base_path = "experiments/auction/n_solutions/diversity_sets/randomseed_"+str(seed)+"_n"+str(n)+"_m"+str(m)+"_k"+str(k)+"_per"+str(per)+"_"
+    base_path = "experiments/auction/n_solutions/diversity_sets/randomseed_"+str(seed)+"_n"+str(n)+"_m"+str(m)+"_r"+str(r)+"_k"+str(k)+"_per"+str(per)+"_"
     mdl, hd = generate_diversity_sets(set_list=set_list, bool_list=bool_list, k=k, optimal_index=optimal_index,
                                       base_path=base_path, save=True, fitness_list=value_list, tie_breaker=False)
 

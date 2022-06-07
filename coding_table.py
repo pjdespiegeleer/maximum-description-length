@@ -30,7 +30,6 @@ class CodingTable:
         begin = time.time()
         # all candidates to enter into the coding table are first generated
         candidates = self.generate_candidates(db=db)
-        # print("Candidate Generation = " + str(time.time()-begin))
 
         # These candidates are ordered using the standard candidate order.
         # The resulting array is an index-array.
@@ -47,6 +46,7 @@ class CodingTable:
 
             # the new coding table is constructed in such a way that it maintains the standard cover order.
             new_ct = ct[:new_count] + [candidate] + ct[-n_st:]
+            new_ct = self.get_standard_cover_order(ct=new_ct, db=db)
             new_length = self.get_total_length(db=db, ct=new_ct)
             # If the total encoding length decreases, the new coding table replaces the old one.
             if new_length < old_length:
@@ -70,15 +70,14 @@ class CodingTable:
                 count += 1
         return count
 
-    def get_standard_cover_order(self, ct: List[frozenset], db: List[frozenset] = None) -> List[int]:
+    def get_standard_cover_order(self, ct: List[frozenset], db: List[frozenset] = None) -> List[frozenset]:
         if db is None:
             db = self.db
-
-        index_list = range(len(db))
         # all indexes are sorted according to two subsequent 'rules': the item-length and the support of the item in
         # the database
-        index_list_sorted = sorted(index_list, key=lambda i: (len(ct[i]), self.supp(db=db, x=ct[i])), reverse=True)
-        return index_list_sorted
+        list_sorted = sorted(ct, key=lambda i: (len(i), self.supp(db=db, x=i)), reverse=True)
+        # index_list_sorted = sorted(index_list, key=lambda i: (len(ct[i]), 1/self.supp(db=db, x=ct[i])), reverse=False)
+        return list_sorted
 
     def get_standard_candidate_order(self, candidates: List[frozenset], db: List[frozenset] = None) -> List[int]:
         if db is None:
@@ -87,8 +86,10 @@ class CodingTable:
         index_list = range(len(candidates))
         # all indexes are sorted according to two subsequent 'rules': the item-length and the support of the item in
         # the database
-        index_list_sorted = sorted(index_list, key=lambda i: (len(candidates[i]), self.supp(db=db, x=candidates[i])),
-                                   reverse=True)
+        # index_list_sorted = sorted(index_list, key=lambda i: (len(candidates[i])), self.supp(db=db, x=candidates[i])
+        #                            reverse=True)
+        index_list_sorted = sorted(index_list, key=lambda i: (self.supp(db=db, x=candidates[i]), len(candidates[i])),
+                               reverse=True)
         return index_list_sorted
 
     @staticmethod
@@ -136,7 +137,6 @@ class CodingTable:
                 else:
                     l[c] = 1
             total_codes += len(code_list)
-
         final_len_dict: Dict[frozenset, float] = {}
         for c in l.keys():
             length = l[c]
@@ -175,10 +175,12 @@ class CodingTable:
                     st += [frozenset({i})]
         return st
 
-    def get_ct_length(self, db: List[frozenset], ct: List[frozenset]) -> float:
+    def get_ct_length(self, db: List[frozenset], ct: List[frozenset] = None) -> float:
         """
         Returns the length to encode the coding table itself.
         """
+        if ct is None:
+            ct = self.coding_table
         st = self.standard_table
         l_ct = self.get_code_lengths(db=db, ct=ct)
         l_st = self.get_code_lengths(db=db, ct=st)
@@ -210,13 +212,13 @@ class CodingTable:
 
         total_length: float = db_length + ct_length
         return total_length
+        # return total_length
 
     def generate_candidates(self, db: List[frozenset] = None) -> List[frozenset]:
         if db is None:
             db = self.db
         global_set = set()
         for s in db:
-
             for j in range(2, len(s)+1):
                 comb_list = itertools.combinations(s, j)
                 new_set = {frozenset(i) for i in comb_list}

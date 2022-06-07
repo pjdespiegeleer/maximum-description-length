@@ -28,7 +28,7 @@ def find_two_most_diverse(sol):
     return div_set
 
 
-def greedy_hamming(sol, k: int = 2, optimal_index: int = 0, fitness_list=[], tie_breaker=True):
+def greedy_hamming(sol, k: int = 2, optimal_index: int = 0, fitness_list=[], tie_breaker=False):
     assert(k >= 2)
     sol = sol.copy()
     fitness_list = fitness_list.copy()
